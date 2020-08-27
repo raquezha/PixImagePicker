@@ -3,6 +3,7 @@ package com.fxn.pix;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
@@ -64,6 +65,8 @@ import com.otaliastudios.cameraview.size.AspectRatio;
 import com.otaliastudios.cameraview.size.SizeSelector;
 import com.otaliastudios.cameraview.size.SizeSelectors;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -84,8 +87,6 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
     private static int maxVideoDuration = 40000;
     private static ImageVideoFetcher imageVideoFetcher;
     private CameraView camera;
-    private int status_bar_height = 0;
-    private int BottomBarHeight = 0;
     private int colorPrimaryDark;
     private float zoom = 0.0f;
     private float dist = 0.0f;
@@ -157,39 +158,6 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
     private ImageView front;
     private ImageView clickme;
     private int flashDrawable;
-    private View.OnTouchListener onCameraTouchListner = new View.OnTouchListener() {
-
-        @Override
-        public boolean onTouch(View v, MotionEvent event) {
-            if (event.getPointerCount() > 1) {
-
-                switch (event.getAction() & MotionEvent.ACTION_MASK) {
-                    case MotionEvent.ACTION_POINTER_DOWN:
-                        dist = Utility.getFingerSpacing(event);
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        float maxZoom = 1f;
-
-                        float newDist = Utility.getFingerSpacing(event);
-                        if (newDist > dist) {
-                            //zoom in
-                            if (zoom < maxZoom) {
-                                zoom = zoom + 0.01f;
-                            }
-                        } else if ((newDist < dist) && (zoom > 0)) {
-                            //zoom out
-                            zoom = zoom - 0.01f;
-                        }
-                        dist = newDist;
-                        camera.setZoom(zoom);
-                        break;
-                    default:
-                        break;
-                }
-            }
-            return false;
-        }
-    };
     private OnSelectionListener onSelectionListener = new OnSelectionListener() {
         @Override
         public void onClick(Img img, View view, int position) {
@@ -242,8 +210,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
                     });
                     sendButton.startAnimation(anim);
                 }
-                selection_count.setText(selectionList.size() + " " +
-                        getResources().getString(R.string.pix_selected));
+                selection_count.setText(selectionList.size() + " " + getResources().getString(R.string.pix_selected));
                 img_count.setText(String.valueOf(selectionList.size()));
             } else {
                 img.setPosition(position);
@@ -401,13 +368,15 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         }
         try {
             options = (Options) getIntent().getSerializableExtra(OPTIONS);
+            if (options != null) {
+                maxVideoDuration = options.getVideoDurationLimitinSeconds() * 1000; //conversion in  milli seconds
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        maxVideoDuration = options.getVideoDurationLimitinSeconds() * 1000; //conversion in  milli seconds
 
         ((TextView) findViewById(R.id.message_bottom)).setText(options.isExcludeVideos() ? R.string.pix_bottom_message_without_video : R.string.pix_bottom_message_with_video);
-        status_bar_height = Utility.getStatusBarSizePort(Pix.this);
+        int status_bar_height = Utility.getStatusBarSizePort(Pix.this);
         setRequestedOrientation(options.getScreenOrientation());
         colorPrimaryDark =
                 ResourcesCompat.getColor(getResources(), R.color.colorPrimaryPix, getTheme());
@@ -439,7 +408,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
 
         camera.addCameraListener(new CameraListener() {
             @Override
-            public void onPictureTaken(PictureResult result) {
+            public void onPictureTaken(@NotNull PictureResult result) {
 
                 File dir = Environment.getExternalStoragePublicDirectory(options.getPath());
                 if (!dir.exists()) {
@@ -453,6 +422,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
                     @Override
                     public void onFileReady(@Nullable File photo) {
                         Utility.vibe(Pix.this, 50);
+                        assert photo != null;
                         Img img = new Img("", "", photo.getAbsolutePath(), "", 1);
                         selectionList.add(img);
                         Utility.scanPhoto(Pix.this, photo);
@@ -462,7 +432,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
             }
 
             @Override
-            public void onVideoTaken(VideoResult result) {
+            public void onVideoTaken(@NotNull VideoResult result) {
                 // A Video was taken!
                 Utility.vibe(Pix.this, 50);
                 Img img = new Img("", "", result.getFile().getAbsolutePath(), "", 3);
@@ -550,7 +520,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         recyclerView.addOnScrollListener(mScrollListener);
         FrameLayout mainFrameLayout = findViewById(R.id.mainFrameLayout);
         CoordinatorLayout main_content = findViewById(R.id.main_content);
-        BottomBarHeight = Utility.getSoftButtonsBarSizePort(this);
+        int bottomBarHeight = Utility.getSoftButtonsBarSizePort(this);
         FrameLayout.LayoutParams lp1 =
                 new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
                         FrameLayout.LayoutParams.MATCH_PARENT);
@@ -592,6 +562,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         updateImages();
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void onClickMethods() {
         clickme.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -646,11 +617,10 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
                     return;
                 }
                 final ObjectAnimator oj = ObjectAnimator.ofFloat(camera, "alpha", 1f, 0f, 0f, 1f);
-                oj.setStartDelay(200l);
-                oj.setDuration(600l);
+                oj.setStartDelay(200L);
+                oj.setDuration(600L);
                 oj.start();
                 camera.takePicture();
-                return;
             }
         });
         findViewById(R.id.selection_ok).setOnClickListener(new View.OnClickListener() {
@@ -694,7 +664,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
                             @Override
                             public void onAnimationEnd(Animator animation) {
                                 super.onAnimationEnd(animation);
-                                iv.setTranslationY(-(height / 2));
+                                iv.setTranslationY((float)(-(height / 2)));
                                 if (flashDrawable == R.drawable.ic_flash_auto_black_24dp) {
                                     flashDrawable = R.drawable.ic_flash_off_black_24dp;
                                     iv.setImageResource(flashDrawable);
@@ -740,6 +710,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         });
     }
 
+    @SuppressLint("SetTextI18n")
     private void updateImages() {
         mainImageAdapter.clearList();
         Cursor cursor = Utility.getImageVideoCursor(Pix.this, options.isExcludeVideos());
@@ -764,8 +735,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
             Uri path = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                     "" + cursor.getInt(contentUrl));
             calendar = Calendar.getInstance();
-            int finDate = imageDate; // mediaType == 1 ? imageDate : videoDate;
-            calendar.setTimeInMillis(cursor.getLong(finDate) * 1000);
+            calendar.setTimeInMillis(cursor.getLong(imageDate) * 1000);
             //Log.e("time",i+"->"+new SimpleDateFormat("hh:mm:ss dd/MM/yyyy",Locale.ENGLISH).format(calendar.getTime()));
             String dateDifference = Utility.getDateDifference(Pix.this, calendar);
             if (!header.equalsIgnoreCase("" + dateDifference)) {
@@ -796,8 +766,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
             sendButton.startAnimation(anim);
             selection_check.setVisibility(View.GONE);
             topbar.setBackgroundColor(colorPrimaryDark);
-            selection_count.setText(selectionList.size() + " " +
-                    getResources().getString(R.string.pix_selected));
+            selection_count.setText(selectionList.size() + " " + getResources().getString(R.string.pix_selected));
             img_count.setText(String.valueOf(selectionList.size()));
             DrawableCompat.setTint(selection_back.getDrawable(), Color.parseColor("#ffffff"));
         }
@@ -958,6 +927,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouch(View view, MotionEvent event) {
         switch (event.getAction()) {
