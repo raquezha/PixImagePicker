@@ -29,13 +29,12 @@ import java.util.ArrayList;
  */
 
 public class InstantImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private ArrayList<Img> list;
+    private final ArrayList<Img> list;
     private OnSelectionListener onSelectionListener;
-    private RequestManager glide;
-    private RequestOptions options;
-    private float size;
-private int margin = 3;
-    private int padding;
+    private final RequestManager glide;
+    private final RequestOptions options;
+    private final float size;
+    private final int padding;
 
     public InstantImageAdapter(Context context) {
         this.list = new ArrayList<>();
@@ -64,6 +63,7 @@ private int margin = 3;
         notifyDataSetChanged();
     }
 
+    @SuppressWarnings("unused")
     public void clearList() {
         list.clear();
     }
@@ -101,6 +101,7 @@ private int margin = 3;
         if (holder instanceof Holder) {
             Holder imageHolder = (Holder) holder;
             FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams((int) size, (int) size);
+            int margin = 3;
             if (position == 0) {
                 layoutParams.setMargins(-(margin / 2), margin, margin, margin);
             } else {
@@ -134,9 +135,9 @@ private int margin = 3;
     }
 
     public class Holder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
-        private ImageView preview;
-        private ImageView selection;
-        private ImageView isVideo;
+        private final ImageView preview;
+        private final ImageView selection;
+        private final ImageView isVideo;
 
 
         Holder(View itemView) {
@@ -162,7 +163,7 @@ private int margin = 3;
         }
     }
 
-    public class HolderNone extends RecyclerView.ViewHolder {
+    public static class HolderNone extends RecyclerView.ViewHolder {
         HolderNone(View itemView) {
             super(itemView);
         }

@@ -31,18 +31,19 @@ import java.util.ArrayList;
  * Created by akshay on 17/03/18.
  */
 
-public class MainImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements HeaderItemDecoration.StickyHeaderInterface, SectionIndexer {
+public class MainImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
+        implements HeaderItemDecoration.StickyHeaderInterface, SectionIndexer {
 
     public static final int HEADER = 1;
     public static final int ITEM = 2;
     public static final int SPAN_COUNT = 4;
     private static final int MARGIN = 4;
 
-    private ArrayList<Img> list;
+    private final ArrayList<Img> list;
     private OnSelectionListener onSelectionListener;
-    private FrameLayout.LayoutParams layoutParams;
-    private RequestManager glide;
-    private RequestOptions options;
+    private final FrameLayout.LayoutParams layoutParams;
+    private final RequestManager glide;
+    private final RequestOptions options;
 
     public MainImageAdapter(Context context) {
         this.list = new ArrayList<>();
@@ -179,9 +180,9 @@ public class MainImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     }
 
     public class Holder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
-        private ImageView preview;
-        private ImageView selection;
-        private ImageView isVideo;
+        private final ImageView preview;
+        private final ImageView selection;
+        private final ImageView isVideo;
 
         Holder(View itemView) {
             super(itemView);
@@ -207,8 +208,8 @@ public class MainImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         }
     }
 
-    public class HeaderHolder extends RecyclerView.ViewHolder {
-        private TextView header;
+    public static class HeaderHolder extends RecyclerView.ViewHolder {
+        private final TextView header;
 
         HeaderHolder(View itemView) {
             super(itemView);

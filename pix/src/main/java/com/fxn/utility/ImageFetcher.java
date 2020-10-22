@@ -1,5 +1,6 @@
 package com.fxn.utility;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
@@ -15,15 +16,17 @@ import java.util.Calendar;
  * Created by akshay on 06/04/18.
  */
 
+@SuppressWarnings("unused")
 public class ImageFetcher extends AsyncTask<Cursor, Void, ImageFetcher.ModelList> {
 
 
     public int startingCount = 0;
     public String header = "";
-    private ArrayList<Img> selectionList = new ArrayList<>();
-    private ArrayList<Img> LIST = new ArrayList<>();
+    private final ArrayList<Img> selectionList = new ArrayList<>();
+    private final ArrayList<Img> LIST = new ArrayList<>();
     private ArrayList<String> preSelectedUrls = new ArrayList<>();
-    private Context context;
+    @SuppressLint("StaticFieldLeak")
+    private final Context context;
 
     public ImageFetcher(Context context) {
         this.context = context;
@@ -96,9 +99,9 @@ public class ImageFetcher extends AsyncTask<Cursor, Void, ImageFetcher.ModelList
         return new ModelList(LIST, selectionList);
     }
 
-    public class ModelList {
-        ArrayList<Img> LIST = new ArrayList<>();
-        ArrayList<Img> selection = new ArrayList<>();
+    public static class ModelList {
+        ArrayList<Img> LIST;
+        ArrayList<Img> selection;
 
         public ModelList(ArrayList<Img> LIST, ArrayList<Img> selection) {
             this.LIST = LIST;
