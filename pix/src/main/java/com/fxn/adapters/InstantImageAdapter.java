@@ -29,12 +29,13 @@ import java.util.ArrayList;
  */
 
 public class InstantImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private final ArrayList<Img> list;
+    private ArrayList<Img> list;
     private OnSelectionListener onSelectionListener;
-    private final RequestManager glide;
-    private final RequestOptions options;
-    private final float size;
-    private final int padding;
+    private RequestManager glide;
+    private RequestOptions options;
+    private float size;
+private int margin = 3;
+    private int padding;
 
     public InstantImageAdapter(Context context) {
         this.list = new ArrayList<>();

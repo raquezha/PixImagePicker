@@ -17,8 +17,8 @@ import org.jetbrains.annotations.NotNull;
 
 public class HeaderItemDecoration extends RecyclerView.ItemDecoration {
 
-    private final StickyHeaderInterface mListener;
-    private final Context context;
+    private StickyHeaderInterface mListener;
+    private Context context;
 
     public HeaderItemDecoration(Context context, @NonNull StickyHeaderInterface listener) {
         mListener = listener;

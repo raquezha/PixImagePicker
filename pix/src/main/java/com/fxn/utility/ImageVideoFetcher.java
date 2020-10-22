@@ -20,11 +20,10 @@ public class ImageVideoFetcher extends AsyncTask<Cursor, Void, ImageVideoFetcher
 
     public int startingCount = 0;
     public String header = "";
-    private final ArrayList<Img> selectionList = new ArrayList<>();
-    private final ArrayList<Img> LIST = new ArrayList<>();
+    private ArrayList<Img> selectionList = new ArrayList<>();
+    private ArrayList<Img> LIST = new ArrayList<>();
     private ArrayList<String> preSelectedUrls = new ArrayList<>();
-    @SuppressLint("StaticFieldLeak")
-    private final Context context;
+    private Context context;
 
     public ImageVideoFetcher(Context context) {
         this.context = context;

@@ -47,7 +47,7 @@ class MyAdapter(private val context: Context) : RecyclerView.Adapter<RecyclerVie
             bitmap = BitmapDrawable(context.resources, f.absolutePath).bitmap
         }
         val roundedBitmapDrawable = RoundedBitmapDrawableFactory.create(context.resources, bitmap)
-        val roundPx = bitmap!!.width.toFloat() * 0.06f
+        val roundPx = bitmap?.width?.toFloat() ?: 0f * 0.06f
         roundedBitmapDrawable.cornerRadius = roundPx
         holder.iv.setImageDrawable(roundedBitmapDrawable)
         holder.iv.setOnClickListener {

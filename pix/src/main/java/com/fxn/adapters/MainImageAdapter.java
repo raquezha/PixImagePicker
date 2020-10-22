@@ -39,11 +39,11 @@ public class MainImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     public static final int SPAN_COUNT = 4;
     private static final int MARGIN = 4;
 
-    private final ArrayList<Img> list;
+    private ArrayList<Img> list;
     private OnSelectionListener onSelectionListener;
-    private final FrameLayout.LayoutParams layoutParams;
-    private final RequestManager glide;
-    private final RequestOptions options;
+    private FrameLayout.LayoutParams layoutParams;
+    private RequestManager glide;
+    private RequestOptions options;
 
     public MainImageAdapter(Context context) {
         this.list = new ArrayList<>();

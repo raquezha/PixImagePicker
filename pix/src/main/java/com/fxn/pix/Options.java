@@ -10,8 +10,7 @@ public class Options implements Serializable {
     private int count = 1;
     private int requestCode = 0;
     private String path = "Pix/Camera";
-    private final int height = 0;
-    private final int width = 0;
+    private int height = 0, width = 0;
     private boolean frontfacing = false;
     private int videoDurationLimitinSeconds = 40;
     private boolean excludeVideos = false;

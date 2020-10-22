@@ -3,6 +3,7 @@ package com.fxn.pix;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
@@ -27,7 +28,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.res.ResourcesCompat;
@@ -53,7 +53,6 @@ import com.fxn.utility.ui.FastScrollStateChangeListener;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.otaliastudios.cameraview.CameraListener;
 import com.otaliastudios.cameraview.CameraView;
-import com.otaliastudios.cameraview.FileCallback;
 import com.otaliastudios.cameraview.PictureResult;
 import com.otaliastudios.cameraview.VideoResult;
 import com.otaliastudios.cameraview.controls.Audio;
@@ -63,6 +62,8 @@ import com.otaliastudios.cameraview.controls.Mode;
 import com.otaliastudios.cameraview.size.AspectRatio;
 import com.otaliastudios.cameraview.size.SizeSelector;
 import com.otaliastudios.cameraview.size.SizeSelectors;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -82,15 +83,10 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
     public static String IMAGE_RESULTS = "image_results";
     public static float TOPBAR_HEIGHT;
     private static int maxVideoDuration = 40000;
-    private static ImageVideoFetcher imageVideoFetcher;
     private CameraView camera;
-    private int status_bar_height = 0;
-    private int BottomBarHeight = 0;
     private int colorPrimaryDark;
-    private float zoom = 0.0f;
-    private float dist = 0.0f;
     private Handler handler = new Handler();
-    private Handler video_counter_handler = new Handler();
+    private  Handler video_counter_handler = new Handler();
     private Runnable video_counter_runnable = null;
     private FastScrollStateChangeListener mFastScrollStateChangeListener;
     private RecyclerView recyclerView, instantRecyclerView;
@@ -103,12 +99,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
     private ViewPropertyAnimator mScrollbarAnimator;
     private ViewPropertyAnimator mBubbleAnimator;
     private Set<Img> selectionList = new HashSet<>();
-    private Runnable mScrollbarHider = new Runnable() {
-        @Override
-        public void run() {
-            hideScrollbar();
-        }
-    };
+    private Runnable mScrollbarHider = this::hideScrollbar;
     private MainImageAdapter mainImageAdapter;
     private float mViewHeight;
     private boolean mHideScrollbar = true;
@@ -118,14 +109,14 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
     private RecyclerView.OnScrollListener mScrollListener = new RecyclerView.OnScrollListener() {
 
         @Override
-        public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+        public void onScrolled(@NotNull RecyclerView recyclerView, int dx, int dy) {
             if (!mHandleView.isSelected() && recyclerView.isEnabled()) {
                 setViewPositions(getScrollProportion(recyclerView));
             }
         }
 
         @Override
-        public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+        public void onScrollStateChanged(@NotNull RecyclerView recyclerView, int newState) {
             super.onScrollStateChanged(recyclerView, newState);
 
             if (recyclerView.isEnabled()) {
@@ -157,40 +148,8 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
     private ImageView front;
     private ImageView clickme;
     private int flashDrawable;
-    private View.OnTouchListener onCameraTouchListner = new View.OnTouchListener() {
-
-        @Override
-        public boolean onTouch(View v, MotionEvent event) {
-            if (event.getPointerCount() > 1) {
-
-                switch (event.getAction() & MotionEvent.ACTION_MASK) {
-                    case MotionEvent.ACTION_POINTER_DOWN:
-                        dist = Utility.getFingerSpacing(event);
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        float maxZoom = 1f;
-
-                        float newDist = Utility.getFingerSpacing(event);
-                        if (newDist > dist) {
-                            //zoom in
-                            if (zoom < maxZoom) {
-                                zoom = zoom + 0.01f;
-                            }
-                        } else if ((newDist < dist) && (zoom > 0)) {
-                            //zoom out
-                            zoom = zoom - 0.01f;
-                        }
-                        dist = newDist;
-                        camera.setZoom(zoom);
-                        break;
-                    default:
-                        break;
-                }
-            }
-            return false;
-        }
-    };
-    private OnSelectionListener onSelectionListener = new OnSelectionListener() {
+    private final OnSelectionListener onSelectionListener = new OnSelectionListener() {
+        @SuppressLint("SetTextI18n")
         @Override
         public void onClick(Img img, View view, int position) {
             if (LongSelection) {
@@ -254,6 +213,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
             }
         }
 
+        @SuppressLint("SetTextI18n")
         @Override
         public void onLongClick(Img img, View view, int position) {
             if (options.getCount() > 1) {
@@ -297,33 +257,29 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
     };
     private int video_counter_progress = 0;
 
-    public static void start(final Fragment context, final Options options) {
-        PermUtil.checkForCamaraWritePermissions(context, new WorkFinish() {
-            @Override
-            public void onWorkFinish(Boolean check) {
-                Intent i = new Intent(context.getActivity(), Pix.class);
-                i.putExtra(OPTIONS, options);
-                context.startActivityForResult(i, options.getRequestCode());
-            }
+    public static void start(Fragment context, Options options) {
+        PermUtil.checkForCamaraWritePermissions(context, check -> {
+            Intent i = new Intent(context.getActivity(), Pix.class);
+            i.putExtra(OPTIONS, options);
+            context.startActivityForResult(i, options.getRequestCode());
         });
     }
 
+    @SuppressWarnings("unused")
     public static void start(Fragment context, int requestCode) {
         start(context, Options.init().setRequestCode(requestCode).setCount(1));
     }
 
-    public static void start(final FragmentActivity context, final Options options) {
-        PermUtil.checkForCamaraWritePermissions(context, new WorkFinish() {
-            @Override
-            public void onWorkFinish(Boolean check) {
-                Intent i = new Intent(context, Pix.class);
-                i.putExtra(OPTIONS, options);
-                context.startActivityForResult(i, options.getRequestCode());
-            }
+    public static void start(FragmentActivity context, Options options) {
+        PermUtil.checkForCamaraWritePermissions(context, check -> {
+            Intent i = new Intent(context, Pix.class);
+            i.putExtra(OPTIONS, options);
+            context.startActivityForResult(i, options.getRequestCode());
         });
     }
 
-    public static void start(final FragmentActivity context, int requestCode) {
+    @SuppressWarnings("unused")
+    public static void start(FragmentActivity context, int requestCode) {
         start(context, Options.init().setRequestCode(requestCode).setCount(1));
     }
 
@@ -389,6 +345,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         super.onPause();
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void initialize() {
         WindowManager.LayoutParams params = getWindow().getAttributes();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -407,7 +364,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         maxVideoDuration = options.getVideoDurationLimitinSeconds() * 1000; //conversion in  milli seconds
 
         ((TextView) findViewById(R.id.message_bottom)).setText(options.isExcludeVideos() ? R.string.pix_bottom_message_without_video : R.string.pix_bottom_message_with_video);
-        status_bar_height = Utility.getStatusBarSizePort(Pix.this);
+        int status_bar_height = Utility.getStatusBarSizePort(Pix.this);
         setRequestedOrientation(options.getScreenOrientation());
         colorPrimaryDark =
                 ResourcesCompat.getColor(getResources(), R.color.colorPrimaryPix, getTheme());
@@ -439,30 +396,29 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
 
         camera.addCameraListener(new CameraListener() {
             @Override
-            public void onPictureTaken(PictureResult result) {
+            public void onPictureTaken(@NotNull PictureResult result) {
 
                 File dir = Environment.getExternalStoragePublicDirectory(options.getPath());
                 if (!dir.exists()) {
+                    //noinspection ResultOfMethodCallIgnored
                     dir.mkdirs();
                 }
                 File photo = new File(dir, "IMG_"
-                        + new SimpleDateFormat("yyyyMMdd_HHmmSS", Locale.ENGLISH).format(new Date())
+                        + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ENGLISH).format(new Date())
                         + ".jpg");
 
-                result.toFile(photo, new FileCallback() {
-                    @Override
-                    public void onFileReady(@Nullable File photo) {
-                        Utility.vibe(Pix.this, 50);
-                        Img img = new Img("", "", photo.getAbsolutePath(), "", 1);
-                        selectionList.add(img);
-                        Utility.scanPhoto(Pix.this, photo);
-                        returnObjects();
-                    }
+                result.toFile(photo, photo1 -> {
+                    Utility.vibe(Pix.this, 50);
+                    assert photo1 != null;
+                    Img img = new Img("", "", photo1.getAbsolutePath(), "", 1);
+                    selectionList.add(img);
+                    Utility.scanPhoto(Pix.this, photo1);
+                    returnObjects();
                 });
             }
 
             @Override
-            public void onVideoTaken(VideoResult result) {
+            public void onVideoTaken(@NotNull VideoResult result) {
                 // A Video was taken!
                 Utility.vibe(Pix.this, 50);
                 Img img = new Img("", "", result.getFile().getAbsolutePath(), "", 3);
@@ -483,7 +439,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
                         ++video_counter_progress;
                         video_counter_progressbar.setProgress(video_counter_progress);
                         TextView textView = findViewById(R.id.video_counter);
-                        String counter = "";
+                        String counter;
                         int min = 0;
                         String sec = "" + video_counter_progress;
                         if (video_counter_progress > 59) {
@@ -516,7 +472,6 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
             }
             // And much more
         });
-        zoom = 0.0f;
         flash = findViewById(R.id.flash);
         clickme = findViewById(R.id.clickme);
         front = findViewById(R.id.front);
@@ -548,12 +503,11 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         instantRecyclerView.setAdapter(initaliseadapter);
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.addOnScrollListener(mScrollListener);
-        FrameLayout mainFrameLayout = findViewById(R.id.mainFrameLayout);
         CoordinatorLayout main_content = findViewById(R.id.main_content);
-        BottomBarHeight = Utility.getSoftButtonsBarSizePort(this);
-        FrameLayout.LayoutParams lp1 =
-                new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT);
+        FrameLayout.LayoutParams lp1 = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+        );
         lp1.setMargins(0, status_bar_height, 0, 0);
         main_content.setLayoutParams(lp1);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) sendButton.getLayoutParams();
@@ -584,103 +538,75 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         if ((options.getPreSelectedUrls().size()) > options.getCount()) {
             int large = options.getPreSelectedUrls().size() - 1;
             int small = options.getCount();
-            for (int i = large; i > (small - 1); i--) {
-                options.getPreSelectedUrls().remove(i);
+            if (large >= small) {
+                options.getPreSelectedUrls().subList(small, large + 1).clear();
             }
         }
         DrawableCompat.setTint(selection_back.getDrawable(), colorPrimaryDark);
         updateImages();
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @SuppressLint("ClickableViewAccessibility")
     private void onClickMethods() {
-        clickme.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_UP) {
-                    findViewById(R.id.clickmebg).setVisibility(View.GONE);
-                    findViewById(R.id.clickmebg).animate().scaleX(1f).scaleY(1f).setDuration(300).setInterpolator(new AccelerateDecelerateInterpolator()).start();
-                    clickme.animate().scaleX(1f).scaleY(1f).setDuration(300).setInterpolator(new AccelerateDecelerateInterpolator()).start();
-                } else if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    findViewById(R.id.clickmebg).setVisibility(View.VISIBLE);
-                    findViewById(R.id.clickmebg).animate().scaleX(1.2f).scaleY(1.2f).setDuration(300).setInterpolator(new AccelerateDecelerateInterpolator()).start();
-                    clickme.animate().scaleX(1.2f).scaleY(1.2f).setDuration(300).setInterpolator(new AccelerateDecelerateInterpolator()).start();
-                }
-                if (event.getAction() == MotionEvent.ACTION_UP && camera.isTakingVideo()) {
-                    camera.stopVideo();
-                }
-
+        clickme.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                findViewById(R.id.clickmebg).setVisibility(View.GONE);
+                findViewById(R.id.clickmebg).animate().scaleX(1f).scaleY(1f).setDuration(300).setInterpolator(new AccelerateDecelerateInterpolator()).start();
+                clickme.animate().scaleX(1f).scaleY(1f).setDuration(300).setInterpolator(new AccelerateDecelerateInterpolator()).start();
+            } else if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                findViewById(R.id.clickmebg).setVisibility(View.VISIBLE);
+                findViewById(R.id.clickmebg).animate().scaleX(1.2f).scaleY(1.2f).setDuration(300).setInterpolator(new AccelerateDecelerateInterpolator()).start();
+                clickme.animate().scaleX(1.2f).scaleY(1.2f).setDuration(300).setInterpolator(new AccelerateDecelerateInterpolator()).start();
+            }
+            if (event.getAction() == MotionEvent.ACTION_UP && camera.isTakingVideo()) {
+                camera.stopVideo();
+            }
+            return false;
+        });
+        clickme.setOnLongClickListener(v -> {
+            if (options.isExcludeVideos()) {
                 return false;
             }
-        });
-        clickme.setOnLongClickListener(new View.OnLongClickListener() {
-
-            @Override
-            public boolean onLongClick(View v) {
-                if (options.isExcludeVideos()) {
-                    return false;
-                }
-                camera.setMode(Mode.VIDEO);
-                File dir = Environment.getExternalStoragePublicDirectory(options.getPath());
-                if (!dir.exists()) {
-                    dir.mkdirs();
-                }
-                File video = new File(dir, "VID_"
-                        + new SimpleDateFormat("yyyyMMdd_HHmmSS", Locale.ENGLISH).format(new Date())
-                        + ".mp4");
-                video_counter_progressbar.setMax(maxVideoDuration / 1000);
-                video_counter_progressbar.invalidate();
-                camera.takeVideo(video, maxVideoDuration);
-                return true;
+            camera.setMode(Mode.VIDEO);
+            File dir = Environment.getExternalStoragePublicDirectory(options.getPath());
+            if (!dir.exists()) {
+                dir.mkdirs();
             }
+            File video = new File(dir, "VID_"
+                    + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ENGLISH).format(new Date())
+                    + ".mp4");
+            video_counter_progressbar.setMax(maxVideoDuration / 1000);
+            video_counter_progressbar.invalidate();
+            camera.takeVideo(video, maxVideoDuration);
+            return true;
         });
-        clickme.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (selectionList.size() >= options.getCount()) {
-                    Toast.makeText(Pix.this,
-                            String.format(getResources().getString(R.string.cannot_click_image_pix),
-                                    "" + options.getCount()), Toast.LENGTH_LONG).show();
-                    return;
-                }
-                if (camera.getMode() == Mode.VIDEO) {
-                    return;
-                }
-                final ObjectAnimator oj = ObjectAnimator.ofFloat(camera, "alpha", 1f, 0f, 0f, 1f);
-                oj.setStartDelay(200l);
-                oj.setDuration(600l);
-                oj.start();
-                camera.takePicture();
+        clickme.setOnClickListener(view -> {
+            if (selectionList.size() >= options.getCount()) {
+                Toast.makeText(Pix.this,
+                        String.format(getResources().getString(R.string.cannot_click_image_pix),
+                                "" + options.getCount()), Toast.LENGTH_LONG).show();
                 return;
             }
-        });
-        findViewById(R.id.selection_ok).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                returnObjects();
+            if (camera.getMode() == Mode.VIDEO) {
+                return;
             }
+            final ObjectAnimator oj = ObjectAnimator.ofFloat(camera, "alpha", 1f, 0f, 0f, 1f);
+            oj.setStartDelay(200L);
+            oj.setDuration(600L);
+            oj.start();
+            camera.takePicture();
         });
-        sendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                returnObjects();
-            }
-        });
-        selection_back.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-            }
-        });
-        selection_check.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                topbar.setBackgroundColor(colorPrimaryDark);
-                selection_count.setText(getResources().getString(R.string.pix_tap_to_select));
-                img_count.setText(String.valueOf(selectionList.size()));
-                DrawableCompat.setTint(selection_back.getDrawable(), Color.parseColor("#ffffff"));
-                LongSelection = true;
-                selection_check.setVisibility(View.GONE);
-            }
+        findViewById(R.id.selection_ok).setOnClickListener(view -> returnObjects());
+        sendButton.setOnClickListener(view -> returnObjects());
+        selection_back.setOnClickListener(view -> mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED));
+        selection_check.setOnClickListener(view -> {
+            topbar.setBackgroundColor(colorPrimaryDark);
+            selection_count.setText(getResources().getString(R.string.pix_tap_to_select));
+            img_count.setText(String.valueOf(selectionList.size()));
+            DrawableCompat.setTint(selection_back.getDrawable(), Color.parseColor("#ffffff"));
+            LongSelection = true;
+            selection_check.setVisibility(View.GONE);
         });
         final ImageView iv = (ImageView) flash.getChildAt(0);
         flash.setOnClickListener(new View.OnClickListener() {
@@ -694,7 +620,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
                             @Override
                             public void onAnimationEnd(Animator animation) {
                                 super.onAnimationEnd(animation);
-                                iv.setTranslationY(-(height / 2));
+                                iv.setTranslationY(-(height / 2f));
                                 if (flashDrawable == R.drawable.ic_flash_auto_black_24dp) {
                                     flashDrawable = R.drawable.ic_flash_off_black_24dp;
                                     iv.setImageResource(flashDrawable);
@@ -740,6 +666,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         });
     }
 
+    @SuppressLint({"SetTextI18n", "StaticFieldLeak"})
     private void updateImages() {
         mainImageAdapter.clearList();
         Cursor cursor = Utility.getImageVideoCursor(Pix.this, options.isExcludeVideos());
@@ -764,8 +691,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
             Uri path = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                     "" + cursor.getInt(contentUrl));
             calendar = Calendar.getInstance();
-            int finDate = imageDate; // mediaType == 1 ? imageDate : videoDate;
-            calendar.setTimeInMillis(cursor.getLong(finDate) * 1000);
+            calendar.setTimeInMillis(cursor.getLong(imageDate) * 1000);
             //Log.e("time",i+"->"+new SimpleDateFormat("hh:mm:ss dd/MM/yyyy",Locale.ENGLISH).format(calendar.getTime()));
             String dateDifference = Utility.getDateDifference(Pix.this, calendar);
             if (!header.equalsIgnoreCase("" + dateDifference)) {
@@ -803,7 +729,12 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         }
         mainImageAdapter.addImageList(INSTANTLIST);
         initaliseadapter.addImageList(INSTANTLIST);
-        imageVideoFetcher = new ImageVideoFetcher(Pix.this) {
+        // Start and end values for the X axis scaling
+        // Start and end values for the Y axis scaling
+        // Pivot point of X scaling
+        // Pivot point of Y scaling
+        // Needed to keep the result of the animation
+        ImageVideoFetcher imageVideoFetcher = new ImageVideoFetcher(Pix.this) {
             @Override
             protected void onPostExecute(ModelList modelList) {
                 super.onPostExecute(modelList);
@@ -843,7 +774,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         View bottomSheet = findViewById(R.id.bottom_sheet);
         mBottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
         mBottomSheetBehavior.setPeekHeight((int) (Utility.convertDpToPixel(194, this)));
-        mBottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+        mBottomSheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
 
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
@@ -859,12 +790,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
                     Utility.showScrollbar(mScrollbar, Pix.this);
                     mainImageAdapter.notifyDataSetChanged();
                     mViewHeight = mScrollbar.getMeasuredHeight();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            setViewPositions(getScrollProportion(recyclerView));
-                        }
-                    });
+                    handler.post(() -> setViewPositions(getScrollProportion(recyclerView)));
                     sendButton.setVisibility(View.GONE);
                     //  fotoapparat.stop();
                 } else if (slideOffset == 0) {
@@ -907,7 +833,8 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
 
             int scrolledItemCount = Math.round(proportion * itemCount);
             int targetPos = Utility.getValueInRange(0, itemCount - 1, scrolledItemCount);
-            recyclerView.getLayoutManager().scrollToPosition(targetPos);
+            if(recyclerView.getLayoutManager() != null)
+                recyclerView.getLayoutManager().scrollToPosition(targetPos);
 
             if (mainImageAdapter != null) {
                 String text = mainImageAdapter.getSectionMonthYearText(targetPos);
@@ -958,6 +885,7 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouch(View view, MotionEvent event) {
         switch (event.getAction()) {
@@ -1004,10 +932,9 @@ public class Pix extends AppCompatActivity implements View.OnTouchListener {
 
     @Override
     public void onBackPressed() {
-
         if (selectionList.size() > 0) {
             for (Img img : selectionList) {
-                options.setPreSelectedUrls(new ArrayList<String>());
+                options.setPreSelectedUrls(new ArrayList<>());
                 mainImageAdapter.getItemList().get(img.getPosition()).setSelected(false);
                 mainImageAdapter.notifyItemChanged(img.getPosition());
                 initaliseadapter.getItemList().get(img.getPosition()).setSelected(false);
