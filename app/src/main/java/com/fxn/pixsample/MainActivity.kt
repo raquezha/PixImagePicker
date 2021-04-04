@@ -10,9 +10,8 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.fxn.adapters.MyAdapter
 import com.fxn.pix.Options
 import com.fxn.pix.Pix
+import com.fxn.pixsample.databinding.ActivityMainBinding
 import com.fxn.utility.PermUtil
-import kotlinx.android.synthetic.main.activity_main.*
-import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,11 +20,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var options: Options
     private var returnValue = ArrayList<String>()
 
+    private val binding = ActivityMainBinding.inflate(layoutInflater)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
-        recyclerView.layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
+        setContentView(binding.root)
+
+        binding.recyclerView.layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
         myAdapter = MyAdapter(this)
         options = Options.init()
                 .setRequestCode(requestCodePicker)
@@ -36,8 +38,9 @@ class MainActivity : AppCompatActivity() {
                 .setVideoDurationLimitinSeconds(30)
                 .setScreenOrientation(Options.SCREEN_ORIENTATION_PORTRAIT)
                 .setPath("pix/akshay")
-        recyclerView.adapter = myAdapter
-        fab.setOnClickListener {
+
+        binding.recyclerView.adapter = myAdapter
+        binding.fab.setOnClickListener {
             options.preSelectedUrls = returnValue
             Pix.start(this@MainActivity, options)
         }

@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -20,6 +19,8 @@ import com.fxn.interfaces.OnSelectionListener;
 import com.fxn.modals.Img;
 import com.fxn.pix.R;
 import com.fxn.utility.Utility;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -76,9 +77,9 @@ private int margin = 3;
         }
     }
 
-    @NonNull
+    @NotNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public RecyclerView.ViewHolder onCreateViewHolder(@NotNull ViewGroup parent, int viewType) {
         if (viewType == MainImageAdapter.HEADER) {
             View view = LayoutInflater.from(parent.getContext()).
                     inflate(R.layout.inital_image, parent, false);
@@ -97,7 +98,7 @@ private int margin = 3;
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(@NotNull RecyclerView.ViewHolder holder, int position) {
         Img image = list.get(position);
         if (holder instanceof Holder) {
             Holder imageHolder = (Holder) holder;

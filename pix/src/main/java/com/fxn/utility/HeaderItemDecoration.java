@@ -6,7 +6,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.jetbrains.annotations.NotNull;
@@ -20,7 +19,7 @@ public class HeaderItemDecoration extends RecyclerView.ItemDecoration {
     private StickyHeaderInterface mListener;
     private Context context;
 
-    public HeaderItemDecoration(Context context, @NonNull StickyHeaderInterface listener) {
+    public HeaderItemDecoration(Context context, @NotNull StickyHeaderInterface listener) {
         mListener = listener;
         this.context = context;
     }
